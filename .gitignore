@@ -1,0 +1,23 @@
+# Node & Frontend Ignores
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# PHP & Backend Ignores
+backend/vendor/
+backend/.env
+backend/storage/*.key
+backend/database/database.sqlite
+backend/database/database.sqlite-journal
+backend/public/storage
+backend/bootstrap/cache/*
+backend/storage/app/public/mock_cloudinary/*
+
+# OS Ignores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
