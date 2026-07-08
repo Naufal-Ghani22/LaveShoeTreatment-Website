@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Search, ShoppingBag, Users, DollarSign, Settings, LogOut, CheckCircle, Clock, 
   Trash2, Send, CreditCard, ChevronRight, Image, Info, User, HelpCircle, Award, 
-  MapPin, Phone, Building, ArrowUpRight, ArrowDownRight, RefreshCw, BarChart2, ShieldCheck
+  MapPin, Phone, Building, ArrowUpRight, ArrowDownRight, ArrowUpLeft, RefreshCw, BarChart2, ShieldCheck
 } from 'lucide-react';
 import api from './api';
 
