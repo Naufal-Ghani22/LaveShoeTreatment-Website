@@ -396,8 +396,8 @@ export default function App() {
             
             {/* Header / Logo */}
             <div className="flex flex-col items-center mb-8">
-              <div className="w-20 h-20 bg-gradient-to-tr from-brand-primary to-brand-cyan rounded-2xl flex items-center justify-center shadow-lg shadow-brand-primary/40 mb-3 animate-pulse">
-                <ShoppingBag className="w-10 h-10 text-white" />
+              <div className="w-20 h-20 bg-slate-900/40 rounded-2xl flex items-center justify-center shadow-lg shadow-slate-950/40 mb-3 border border-white/10 overflow-hidden p-2.5">
+                <img src="/favicon.png" className="w-full h-full object-contain" alt="Logo" />
               </div>
               <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white to-brand-cyan bg-clip-text text-transparent">LAVE SHOE TREATMENT</h1>
               <p className="text-xs text-slate-300 font-medium mt-1">Digital Customer & Order Tracking</p>
@@ -568,8 +568,8 @@ export default function App() {
         <div className="flex-1 flex flex-col justify-center items-center p-6 bg-slate-900 text-white">
           <div className="w-full max-w-md bg-slate-800/40 backdrop-blur-md border border-slate-700/50 p-8 rounded-3xl shadow-xl relative">
             <div className="flex flex-col items-center mb-8">
-              <div className="w-16 h-16 bg-gradient-to-tr from-brand-primary to-brand-cyan rounded-2xl flex items-center justify-center shadow-lg shadow-brand-primary/20 mb-3">
-                <ShieldCheck className="w-8 h-8 text-white" />
+              <div className="w-16 h-16 bg-slate-800/40 rounded-2xl flex items-center justify-center shadow-lg shadow-slate-950/40 mb-3 border border-slate-700 overflow-hidden p-2">
+                <img src="/favicon.png" className="w-full h-full object-contain" alt="Logo" />
               </div>
               <h2 className="text-xl font-bold">LAVE BMS SECURE LOGIN</h2>
               <p className="text-xs text-slate-400 mt-1">Sistem Manajemen Bisnis Lave Shoe Treatment</p>
@@ -626,8 +626,8 @@ export default function App() {
           <aside className="w-64 bg-slate-950 text-white flex flex-col border-r border-slate-900 shrink-0">
             {/* Brand Title */}
             <div className="p-6 border-b border-slate-900 flex items-center gap-3">
-              <div className="w-9 h-9 bg-gradient-to-tr from-brand-primary to-brand-cyan rounded-lg flex items-center justify-center shrink-0">
-                <ShoppingBag className="w-5 h-5 text-white" />
+              <div className="w-9 h-9 bg-slate-800/60 rounded-lg flex items-center justify-center shrink-0 overflow-hidden p-1 border border-slate-700">
+                <img src="/favicon.png" className="w-full h-full object-contain" alt="Logo" />
               </div>
               <div>
                 <h2 className="text-sm font-bold tracking-wide">LAVE STREAT</h2>
