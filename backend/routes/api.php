@@ -47,6 +47,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/finance/categories', [FinanceController::class, 'getCategories']);
     Route::get('/finance/expenses', [FinanceController::class, 'getExpenses']);
     Route::post('/finance/expenses', [FinanceController::class, 'recordExpense']);
+    Route::get('/finance/incomes', [FinanceController::class, 'getIncomes']);
+    Route::post('/finance/incomes', [FinanceController::class, 'recordIncome']);
     Route::get('/finance/cashflows', [FinanceController::class, 'getCashflows']);
     Route::get('/finance/performance', [FinanceController::class, 'getBusinessPerformance']);
     Route::get('/finance/assets', [FinanceController::class, 'getAssets']);

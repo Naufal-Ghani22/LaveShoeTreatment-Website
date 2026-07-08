@@ -47,6 +47,13 @@ export default function App() {
   const [qcOrderId, setQcOrderId] = useState(null);
   const [qcFiles, setQcFiles] = useState([]);
 
+  // Manual Income Modal state
+  const [showIncomeModal, setShowIncomeModal] = useState(false);
+  const [incomeCategory, setIncomeCategory] = useState('');
+  const [incomeAmount, setIncomeAmount] = useState('');
+  const [incomeDate, setIncomeDate] = useState(new Date().toISOString().split('T')[0]);
+  const [incomeDesc, setIncomeDesc] = useState('');
+
   // New Order Form state
   const [newOrderCustomer, setNewOrderCustomer] = useState('');
   const [newOrderPickup, setNewOrderPickup] = useState('Drop-off');
@@ -354,6 +361,26 @@ export default function App() {
       setExpenseDesc('');
     } catch (err) {
       alert(err.response?.data?.message || 'Gagal mencatat pengeluaran.');
+    }
+  };
+
+  const handleRecordIncome = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post('/finance/incomes', {
+        financial_category_id: incomeCategory,
+        branch_id: 1,
+        amount: incomeAmount,
+        income_date: incomeDate,
+        description: incomeDesc,
+      });
+      fetchFinancePerformance();
+      setShowIncomeModal(false);
+      setIncomeCategory('');
+      setIncomeAmount('');
+      setIncomeDesc('');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gagal mencatat pemasukan.');
     }
   };
 
@@ -771,52 +798,90 @@ export default function App() {
                           <p className="text-[10px] text-slate-500">Visualisasi arus kas masuk dari jasa cuci</p>
                         </div>
                       </div>
-                      
-                      {/* Simple SVG Chart representing a healthy growth curve */}
+                           {/* Dynamic SVG Chart representing real monthly performance trend */}
                       <div className="h-48 w-full flex items-end">
-                        <svg className="w-full h-full" viewBox="0 0 500 150">
-                          <defs>
-                            <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#0056B3" stopOpacity="0.25"/>
-                              <stop offset="100%" stopColor="#00E5FF" stopOpacity="0.0"/>
-                            </linearGradient>
-                          </defs>
-                          {/* Grid Lines */}
-                          <line x1="0" y1="37" x2="500" y2="37" stroke="#f1f5f9" strokeWidth="1" />
-                          <line x1="0" y1="75" x2="500" y2="75" stroke="#f1f5f9" strokeWidth="1" />
-                          <line x1="0" y1="112" x2="500" y2="112" stroke="#f1f5f9" strokeWidth="1" />
+                        {(() => {
+                          const trend = financialData?.trend || [];
+                          const maxVal = Math.max(...trend.map(t => Math.max(t.income, t.expense)), 50000);
                           
-                          {/* Filled Area */}
-                          <path 
-                            d="M 0 150 L 0 110 L 80 120 L 160 90 L 240 100 L 320 60 L 400 45 L 500 20 L 500 150 Z" 
-                            fill="url(#chartGradient)"
-                          />
-                          {/* Line */}
-                          <path 
-                            d="M 0 110 L 80 120 L 160 90 L 240 100 L 320 60 L 400 45 L 500 20" 
-                            fill="none" 
-                            stroke="#0056B3" 
-                            strokeWidth="3.5" 
-                            strokeLinecap="round"
-                          />
-                          {/* Dots */}
-                          <circle cx="0" cy="110" r="4.5" fill="#00E5FF" stroke="#0056B3" strokeWidth="2" />
-                          <circle cx="80" cy="120" r="4.5" fill="#00E5FF" stroke="#0056B3" strokeWidth="2" />
-                          <circle cx="160" cy="90" r="4.5" fill="#00E5FF" stroke="#0056B3" strokeWidth="2" />
-                          <circle cx="240" cy="100" r="4.5" fill="#00E5FF" stroke="#0056B3" strokeWidth="2" />
-                          <circle cx="320" cy="60" r="4.5" fill="#00E5FF" stroke="#0056B3" strokeWidth="2" />
-                          <circle cx="400" cy="45" r="4.5" fill="#00E5FF" stroke="#0056B3" strokeWidth="2" />
-                          <circle cx="500" cy="20" r="4.5" fill="#00E5FF" stroke="#0056B3" strokeWidth="2" />
-                        </svg>
+                          const incomePoints = trend.map((t, idx) => {
+                            const x = idx * 100;
+                            const y = 140 - (t.income / maxVal) * 120;
+                            return `${x},${y}`;
+                          });
+
+                          const expensePoints = trend.map((t, idx) => {
+                            const x = idx * 100;
+                            const y = 140 - (t.expense / maxVal) * 120;
+                            return `${x},${y}`;
+                          });
+
+                          const incomePath = incomePoints.length > 0 ? `M ${incomePoints.join(' L ')}` : '';
+                          const expensePath = expensePoints.length > 0 ? `M ${expensePoints.join(' L ')}` : '';
+                          const incomeArea = incomePoints.length > 0 ? `M 0,150 L ${incomePoints.join(' L ')} L 500,150 Z` : '';
+                          const expenseArea = expensePoints.length > 0 ? `M 0,150 L ${expensePoints.join(' L ')} L 500,150 Z` : '';
+
+                          return (
+                            <svg className="w-full h-full" viewBox="0 0 500 150">
+                              <defs>
+                                <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#0066cc" stopOpacity="0.25"/>
+                                  <stop offset="100%" stopColor="#00e5ff" stopOpacity="0.0"/>
+                                </linearGradient>
+                                <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#e11d48" stopOpacity="0.2"/>
+                                  <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.0"/>
+                                </linearGradient>
+                              </defs>
+                              <line x1="0" y1="37" x2="500" y2="37" stroke="#f1f5f9" strokeWidth="1" />
+                              <line x1="0" y1="75" x2="500" y2="75" stroke="#f1f5f9" strokeWidth="1" />
+                              <line x1="0" y1="112" x2="500" y2="112" stroke="#f1f5f9" strokeWidth="1" />
+                              
+                              {incomePath && (
+                                <>
+                                  <path d={incomeArea} fill="url(#incomeGradient)" />
+                                  <path d={incomePath} fill="none" stroke="#0066cc" strokeWidth="3" strokeLinecap="round" />
+                                </>
+                              )}
+                              {expensePath && (
+                                <>
+                                  <path d={expenseArea} fill="url(#expenseGradient)" />
+                                  <path d={expensePath} fill="none" stroke="#e11d48" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="3,3" />
+                                </>
+                              )}
+                              {trend.map((t, idx) => {
+                                const x = idx * 100;
+                                const yInc = 140 - (t.income / maxVal) * 120;
+                                const yExp = 140 - (t.expense / maxVal) * 120;
+                                return (
+                                  <g key={idx}>
+                                    <circle cx={x} cy={yInc} r="4.5" fill="#00e5ff" stroke="#0066cc" strokeWidth="2" />
+                                    <circle cx={x} cy={yExp} r="3.5" fill="#fda4af" stroke="#e11d48" strokeWidth="1.5" />
+                                  </g>
+                                );
+                              })}
+                            </svg>
+                          );
+                        })()}
                       </div>
                       
                       <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-3.5 uppercase tracking-wider px-2">
-                        <span>Minggu 1</span>
-                        <span>Minggu 2</span>
-                        <span>Minggu 3</span>
-                        <span>Minggu 4</span>
-                      </div>
-                    </div>
+                        {(financialData?.trend || []).map((t, idx) => {
+                          const date = new Date(t.month + '-02');
+                          const monthLabel = date.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' });
+                          return <span key={idx}>{monthLabel}</span>;
+                        })}
+                        {(financialData?.trend || []).length === 0 && (
+                          <>
+                            <span>Bulan 1</span>
+                            <span>Bulan 2</span>
+                            <span>Bulan 3</span>
+                            <span>Bulan 4</span>
+                            <span>Bulan 5</span>
+                            <span>Bulan 6</span>
+                          </>
+                        )}
+                      </div>                  </div>
 
                     {/* Target Achievement Widget */}
                     <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
@@ -1144,6 +1209,12 @@ export default function App() {
                   {/* Financial Controls */}
                   <div className="flex gap-4">
                     <button 
+                      onClick={() => setShowIncomeModal(true)}
+                      className="px-4 py-2.5 bg-emerald-50 border border-emerald-250 text-emerald-700 text-xs font-bold rounded-xl hover:bg-emerald-100 transition-all flex items-center gap-1.5"
+                    >
+                      <ArrowUpLeft className="w-4.5 h-4.5" /> Catat Pemasukan
+                    </button>
+                    <button 
                       onClick={() => setShowExpenseModal(true)}
                       className="px-4 py-2.5 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold rounded-xl hover:bg-rose-100 transition-all flex items-center gap-1.5"
                     >
@@ -1158,40 +1229,79 @@ export default function App() {
                   </div>
 
                   {/* Assets Inventory Depreciation List */}
-                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                    <h3 className="text-sm font-bold text-slate-900 mb-4">Inventaris & Penyusutan Aset</h3>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs">
-                        <thead>
-                          <tr className="border-b border-slate-200 text-slate-400 uppercase tracking-wider font-bold">
-                            <th className="pb-3 font-semibold">Nama Aset</th>
-                            <th className="pb-3 font-semibold">Tgl Pembelian</th>
-                            <th className="pb-3 font-semibold">Harga Beli</th>
-                            <th className="pb-3 font-semibold">Masa Manfaat</th>
-                            <th className="pb-3 font-semibold">Penyusutan Bulanan</th>
-                            <th className="pb-3 font-semibold">Akumulasi Depresiasi</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {assets.map((asset) => (
-                            <tr key={asset.id}>
-                              <td className="py-3.5 font-bold text-slate-900">{asset.asset_name}</td>
-                              <td className="py-3.5 text-slate-500">{new Date(asset.purchase_date).toLocaleDateString('id-ID')}</td>
-                              <td className="py-3.5 font-semibold text-slate-700">Rp {Number(asset.purchase_price).toLocaleString('id-ID')}</td>
-                              <td className="py-3.5 text-slate-500">{asset.useful_months} Bulan</td>
-                              <td className="py-3.5 font-semibold text-rose-600">Rp {Number(asset.monthly_depreciation).toLocaleString('id-ID')}</td>
-                              <td className="py-3.5 font-bold text-slate-900">Rp {Number(asset.accumulated_depreciation).toLocaleString('id-ID')}</td>
+                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                      <h3 className="text-sm font-bold text-slate-900 mb-4">Inventaris & Penyusutan Aset</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-200 text-slate-400 uppercase tracking-wider font-bold">
+                              <th className="pb-3 font-semibold">Nama Aset</th>
+                              <th className="pb-3 font-semibold">Tgl Pembelian</th>
+                              <th className="pb-3 font-semibold">Harga Beli</th>
+                              <th className="pb-3 font-semibold">Masa Manfaat</th>
+                              <th className="pb-3 font-semibold">Penyusutan Bulanan</th>
+                              <th className="pb-3 font-semibold">Akumulasi Depresiasi</th>
                             </tr>
-                          ))}
-                          {assets.length === 0 && (
-                            <tr>
-                              <td colSpan="6" className="text-center py-6 text-slate-400 font-medium">Belum ada aset bisnis yang didaftarkan.</td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {assets.map((asset) => (
+                              <tr key={asset.id}>
+                                <td className="py-3.5 font-bold text-slate-900">{asset.asset_name}</td>
+                                <td className="py-3.5 text-slate-500">{new Date(asset.purchase_date).toLocaleDateString('id-ID')}</td>
+                                <td className="py-3.5 font-semibold text-slate-700">Rp {Number(asset.purchase_price).toLocaleString('id-ID')}</td>
+                                <td className="py-3.5 text-slate-500">{asset.useful_months} Bulan</td>
+                                <td className="py-3.5 font-semibold text-rose-600">Rp {Number(asset.monthly_depreciation).toLocaleString('id-ID')}</td>
+                                <td className="py-3.5 font-bold text-slate-900">Rp {Number(asset.accumulated_depreciation).toLocaleString('id-ID')}</td>
+                              </tr>
+                            ))}
+                            {assets.length === 0 && (
+                              <tr>
+                                <td colSpan="6" className="text-center py-6 text-slate-400 font-medium">Belum ada aset bisnis yang didaftarkan.</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                  </div>
+
+                    {/* Monthly Cashflow Data (didata perbulan) */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                      <h3 className="text-sm font-bold text-slate-900 mb-4">Ringkasan Cashflow Per Bulan</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-200 text-slate-400 uppercase tracking-wider font-bold">
+                              <th className="pb-3 font-semibold">Bulan Buku</th>
+                              <th className="pb-3 font-semibold text-emerald-600">Total Pemasukan</th>
+                              <th className="pb-3 font-semibold text-rose-600">Total Pengeluaran</th>
+                              <th className="pb-3 font-semibold text-slate-900">Arus Kas Bersih (Net)</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {(financialData?.trend || []).map((t, idx) => {
+                              const date = new Date(t.month + '-02');
+                              const monthLabel = date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                              const net = t.income - t.expense;
+                              return (
+                                <tr key={idx}>
+                                  <td className="py-3.5 font-bold text-slate-900">{monthLabel}</td>
+                                  <td className="py-3.5 font-semibold text-emerald-600">Rp {Number(t.income).toLocaleString('id-ID')}</td>
+                                  <td className="py-3.5 font-semibold text-rose-600">Rp {Number(t.expense).toLocaleString('id-ID')}</td>
+                                  <td className={`py-3.5 font-bold ${net >= 0 ? 'text-brand-primary' : 'text-rose-600'}`}>
+                                    Rp {Number(net).toLocaleString('id-ID')}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                            {(financialData?.trend || []).length === 0 && (
+                              <tr>
+                                <td colSpan="4" className="text-center py-6 text-slate-400 font-medium">Belum ada riwayat transaksi bulanan.</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                 </div>
               )}
 
@@ -1659,6 +1769,76 @@ export default function App() {
                 className="w-full py-3.5 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:shadow-lg hover:shadow-emerald-600/20 transition-all"
               >
                 Konfirmasi Pelunasan & Cetak
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 6. CATAT PEMASUKAN MODAL */}
+      {showIncomeModal && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 text-slate-800">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-xl overflow-hidden">
+            <header className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex justify-between items-center shrink-0">
+              <h3 className="text-sm font-bold text-slate-900 font-sans">Catat Pemasukan Baru</h3>
+              <button onClick={() => setShowIncomeModal(false)} className="text-slate-400 hover:text-slate-900 font-medium text-xs">Tutup</button>
+            </header>
+
+            <form onSubmit={handleRecordIncome} className="p-6 space-y-4 font-sans">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Kategori Pemasukan</label>
+                <select 
+                  value={incomeCategory}
+                  onChange={(e) => setIncomeCategory(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl p-3.5 focus:outline-none"
+                  required
+                >
+                  <option value="">-- Pilih Kategori --</option>
+                  {categories.filter(c => c.category_type === 'Income').map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.category_name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nominal (Rupiah)</label>
+                <input 
+                  type="number" 
+                  value={incomeAmount}
+                  onChange={(e) => setIncomeAmount(e.target.value)}
+                  placeholder="Rp 0" 
+                  className="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl p-3.5 focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tanggal Transaksi</label>
+                <input 
+                  type="date" 
+                  value={incomeDate}
+                  onChange={(e) => setIncomeDate(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl p-3.5 focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Deskripsi / Detail</label>
+                <textarea 
+                  rows="2" 
+                  value={incomeDesc}
+                  onChange={(e) => setIncomeDesc(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl p-3.5 focus:outline-none"
+                  placeholder="Misal: Penjualan produk shoe cleaner botol 250ml, dll..."
+                ></textarea>
+              </div>
+
+              <button 
+                type="submit" 
+                className="w-full py-3.5 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:shadow-lg hover:shadow-emerald-600/20 transition-all"
+              >
+                Simpan Transaksi Pemasukan
               </button>
             </form>
           </div>

@@ -10,6 +10,7 @@ use App\Models\FinancialCategory;
 use App\Models\Income;
 use App\Models\Order;
 use App\Models\PaymentTransaction;
+use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -76,6 +77,62 @@ class FinanceController extends Controller
         });
     }
 
+    public function getIncomes(Request $request)
+    {
+        $query = Income::with(['financialCategory', 'branch']);
+        
+        if ($request->has('category_id')) {
+            $query->where('financial_category_id', $request->input('category_id'));
+        }
+        
+        if ($request->has('start_date') && $request->has('end_date')) {
+            $query->whereBetween('income_date', [$request->input('start_date'), $request->input('end_date')]);
+        }
+
+        return response()->json($query->orderBy('income_date', 'desc')->paginate(15));
+    }
+
+    public function recordIncome(Request $request)
+    {
+        $request->validate([
+            'financial_category_id' => 'required|exists:financial_categories,id',
+            'branch_id' => 'required|exists:branches,id',
+            'amount' => 'required|numeric|min:0',
+            'income_date' => 'required|date',
+            'description' => 'nullable|string',
+        ]);
+
+        return DB::transaction(function () use ($request) {
+            $income = Income::create([
+                'financial_category_id' => $request->financial_category_id,
+                'branch_id' => $request->branch_id,
+                'amount' => $request->amount,
+                'income_date' => $request->income_date,
+                'description' => $request->description,
+            ]);
+
+            // Record to Cashflow Ledger
+            $latestCashflow = Cashflow::where('branch_id', $request->branch_id)->orderBy('id', 'desc')->first();
+            $newBalance = ($latestCashflow ? $latestCashflow->current_balance : 0.00) + $request->amount;
+
+            Cashflow::create([
+                'branch_id' => $request->branch_id,
+                'transaction_type' => 'In',
+                'amount' => $request->amount,
+                'reference_table' => 'incomes',
+                'reference_id' => $income->id,
+                'transaction_date' => $request->income_date,
+                'current_balance' => $newBalance,
+            ]);
+
+            return response()->json([
+                'message' => 'Pemasukan manual berhasil dicatat dan arus kas diperbarui.',
+                'income' => $income,
+                'current_balance' => $newBalance
+            ], 201);
+        });
+    }
+
     public function getCashflows(Request $request)
     {
         $query = Cashflow::query();
@@ -122,13 +179,10 @@ class FinanceController extends Controller
         $averageOrderValue = $completedOrdersCount > 0 ? $completedOrdersRevenue / $completedOrdersCount : 0;
 
         // 5. Customer Lifetime Value (LTV)
-        // LTV = AOV * Average Purchase Frequency
         $averagePurchaseFrequency = $totalCustomers > 0 ? Order::count() / $totalCustomers : 0;
         $customerLifetimeValue = $averageOrderValue * $averagePurchaseFrequency;
 
         // 6. Break-Even Point (BEP) Analysis
-        // Fixed costs: Salary, Rent, Utilities (Expense Category ID 3, 4, etc.)
-        // Variable costs: Chemical cleaners, plastic bags (Expense Category ID 2)
         $fixedCosts = (double) Expense::where('branch_id', $branchId)
             ->whereIn('financial_category_id', [3, 4]) // Listrik/Air, Gaji Karyawan
             ->sum('amount');
@@ -140,11 +194,43 @@ class FinanceController extends Controller
         $totalOrderCount = Order::count();
         $variableCostPerOrder = $totalOrderCount > 0 ? $variableCosts / $totalOrderCount : 0.00;
 
-        // BEP (units) = Fixed Costs / (Average Service Price - Variable Cost per unit)
         $avgServicePrice = Service::where('is_active', true)->avg('price') ?? 45000.00;
         $denominator = $avgServicePrice - $variableCostPerOrder;
         $bepUnits = $denominator > 0 ? ceil($fixedCosts / $denominator) : 0;
         $bepRevenueValue = $bepUnits * $avgServicePrice;
+
+        // 7. Monthly Cashflow Trend (Last 6 Months)
+        $driver = DB::getDriverName();
+        $dateFormatIncome = $driver === 'sqlite' ? "strftime('%Y-%m', income_date)" : "DATE_FORMAT(income_date, '%Y-%m')";
+        $dateFormatExpense = $driver === 'sqlite' ? "strftime('%Y-%m', expense_date)" : "DATE_FORMAT(expense_date, '%Y-%m')";
+
+        $monthlyIncomes = DB::table('incomes')
+            ->select(DB::raw("{$dateFormatIncome} as month"), DB::raw("SUM(amount) as total"))
+            ->where('branch_id', $branchId)
+            ->groupBy('month')
+            ->orderBy('month', 'asc')
+            ->limit(6)
+            ->get();
+
+        $monthlyExpenses = DB::table('expenses')
+            ->select(DB::raw("{$dateFormatExpense} as month"), DB::raw("SUM(amount) as total"))
+            ->where('branch_id', $branchId)
+            ->groupBy('month')
+            ->orderBy('month', 'asc')
+            ->limit(6)
+            ->get();
+
+        $trend = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $m = date('Y-m', strtotime("-{$i} month"));
+            $incVal = (double) ($monthlyIncomes->firstWhere('month', $m)->total ?? 0.00);
+            $expVal = (double) ($monthlyExpenses->firstWhere('month', $m)->total ?? 0.00);
+            $trend[] = [
+                'month' => $m,
+                'income' => $incVal,
+                'expense' => $expVal,
+            ];
+        }
 
         return response()->json([
             'summary' => [
@@ -168,6 +254,7 @@ class FinanceController extends Controller
                 'bep_target_orders' => $bepUnits,
                 'bep_revenue_threshold' => $bepRevenueValue,
             ],
+            'trend' => $trend,
             'assets' => $assets
         ]);
     }
