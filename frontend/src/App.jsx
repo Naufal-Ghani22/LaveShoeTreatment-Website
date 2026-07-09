@@ -27,6 +27,60 @@ const formatPhotoUrl = (url) => {
   return formatted;
 };
 
+const compressImage = (file) => {
+  return new Promise((resolve) => {
+    if (!file || !file.type.startsWith('image/')) {
+      resolve(file);
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1200;
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            resolve(file);
+            return;
+          }
+          const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          });
+          resolve(compressedFile);
+        }, 'image/jpeg', 0.7);
+      };
+      img.onerror = () => resolve(file);
+    };
+    reader.onerror = () => resolve(file);
+  });
+};
+
 export default function App() {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('lavest_user');
@@ -271,6 +325,17 @@ export default function App() {
     setUploading(true);
     setUploadingMessage('Sedang membuat pesanan baru dan mengunggah foto sebelum (Before) ke Cloudinary...');
     try {
+      // Compress all files first in parallel
+      const processedItems = await Promise.all(newOrderItems.map(async (item) => {
+        if (item.files && item.files.length > 0) {
+          const compressed = await Promise.all(
+            Array.from(item.files).map(file => compressImage(file))
+          );
+          return { ...item, compressedFiles: compressed };
+        }
+        return { ...item, compressedFiles: [] };
+      }));
+
       const formData = new FormData();
       formData.append('customer_id', newOrderCustomer);
       formData.append('branch_id', 1);
@@ -278,16 +343,15 @@ export default function App() {
       formData.append('discount', newOrderDiscount);
       formData.append('notes', newOrderNotes);
 
-      newOrderItems.forEach((item, idx) => {
+      processedItems.forEach((item, idx) => {
         formData.append(`items[${idx}][service_id]`, item.service_id);
         formData.append(`items[${idx}][shoe_brand]`, item.shoe_brand);
         formData.append(`items[${idx}][shoe_type]`, item.shoe_type);
         if (item.shoe_color) formData.append(`items[${idx}][shoe_color]`, item.shoe_color);
         formData.append(`items[${idx}][qty]`, item.qty);
 
-        // Append multiple files
-        if (item.files) {
-          Array.from(item.files).forEach((file) => {
+        if (item.compressedFiles && item.compressedFiles.length > 0) {
+          item.compressedFiles.forEach((file) => {
             formData.append(`items[${idx}][photos_before][]`, file);
           });
         }
@@ -355,7 +419,13 @@ export default function App() {
       if (files && files.length > 0) {
         const formData = new FormData();
         formData.append('status', newStatus);
-        files.forEach((file) => {
+        
+        // Compress files in parallel before uploading
+        const compressedFiles = await Promise.all(
+          Array.from(files).map(file => compressImage(file))
+        );
+        
+        compressedFiles.forEach((file) => {
           formData.append('items[0][photos_after][]', file);
         });
         await api.post(`/orders/${orderId}/status`, formData, {
