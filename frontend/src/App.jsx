@@ -267,7 +267,10 @@ export default function App() {
       });
 
       await api.post('/orders', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          'Accept': 'application/json'
+        }
       });
       fetchOrders();
       setShowOrderModal(false);
@@ -278,7 +281,13 @@ export default function App() {
       setNewOrderItems([{ service_id: '', shoe_brand: '', shoe_type: '', shoe_color: '', qty: 1 }]);
       setNewOrderDiscount(0);
     } catch (err) {
-      alert(err.response?.data?.message || 'Gagal membuat pesanan baru.');
+      console.error(err);
+      if (err.response?.data?.errors) {
+        const errorMsgs = Object.values(err.response.data.errors).flat().join('\n');
+        alert('Gagal membuat pesanan:\n' + errorMsgs);
+      } else {
+        alert(err.response?.data?.message || err.message || 'Gagal membuat pesanan baru.');
+      }
     }
   };
 
