@@ -129,7 +129,7 @@ export default function App() {
 
   // Fetch data if authenticated
   useEffect(() => {
-    if (token) {
+    if (token && token !== 'login-mode') {
       fetchServices();
       fetchCustomers();
       fetchOrders();
