@@ -22,7 +22,7 @@ WORKDIR /app
 COPY . .
 
 # Run production composer install (ignoring dev testing libraries to prevent build weight/errors)
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts --ignore-platform-reqs
 
 # Make artisan executable
 RUN chmod +x artisan
