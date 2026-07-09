@@ -47,6 +47,11 @@ export default function App() {
   const [qcOrderId, setQcOrderId] = useState(null);
   const [qcFiles, setQcFiles] = useState([]);
 
+  // Lightbox & Detail states
+  const [previewImage, setPreviewImage] = useState(null);
+  const [selectedOrderForDetail, setSelectedOrderForDetail] = useState(null);
+  const [showOrderDetailModal, setShowOrderDetailModal] = useState(false);
+
   // Manual Income Modal state
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [incomeCategory, setIncomeCategory] = useState('');
@@ -405,6 +410,162 @@ export default function App() {
     }
   };
 
+  const handlePrintInvoice = (order) => {
+    const isPaid = order.payment_transaction?.payment_status === 'Paid';
+    const printWindow = window.open('', '_blank', 'width=800,height=900');
+    
+    const itemsHtml = order.items.map(item => `
+      <tr style="border-bottom: 1px solid #e2e8f0;">
+        <td style="padding: 12px 8px;">
+          <div style="font-weight: bold; color: #1e293b;">${item.shoe_brand} - ${item.shoe_type}</div>
+          <div style="font-size: 10px; color: #64748b;">Warna: ${item.shoe_color || '-'}</div>
+        </td>
+        <td style="padding: 12px 8px; color: #0066cc; font-weight: 600;">${item.service?.service_name || 'Cuci'}</td>
+        <td style="padding: 12px 8px; text-align: center;">${item.qty}</td>
+        <td style="padding: 12px 8px; text-align: right;">Rp ${Number(item.price).toLocaleString('id-ID')}</td>
+        <td style="padding: 12px 8px; text-align: right; font-weight: bold;">Rp ${Number(item.subtotal).toLocaleString('id-ID')}</td>
+      </tr>
+    `).join('');
+
+    const stampHtml = isPaid ? `
+      <div style="
+        position: absolute;
+        bottom: 50px;
+        right: 50px;
+        border: 4px double #10b981;
+        color: #10b981;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        text-align: center;
+        padding: 10px 20px;
+        border-radius: 8px;
+        transform: rotate(-12deg);
+        text-transform: uppercase;
+        background-color: rgba(16, 185, 129, 0.05);
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.05);
+      ">
+        <div style="font-size: 10px; letter-spacing: 1.5px; font-weight: bold;">LAVE SNEAKERS</div>
+        <div style="font-size: 18px; font-weight: 900; margin: 3px 0; letter-spacing: 2px;">L U N A S</div>
+        <div style="font-size: 8px; border-top: 1px dashed #10b981; padding-top: 3px; margin-top: 3px; font-weight: bold;">SAH • NO REVISION</div>
+      </div>
+    ` : `
+      <div style="
+        position: absolute;
+        bottom: 50px;
+        right: 50px;
+        border: 4px double #ef4444;
+        color: #ef4444;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        text-align: center;
+        padding: 10px 20px;
+        border-radius: 8px;
+        transform: rotate(-12deg);
+        text-transform: uppercase;
+        background-color: rgba(239, 68, 68, 0.05);
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.05);
+      ">
+        <div style="font-size: 10px; letter-spacing: 1.5px; font-weight: bold;">LAVE SNEAKERS</div>
+        <div style="font-size: 18px; font-weight: 900; margin: 3px 0; letter-spacing: 1.5px;">UNPAID</div>
+        <div style="font-size: 8px; border-top: 1px dashed #ef4444; padding-top: 3px; margin-top: 3px; font-weight: bold;">BELUM BAYAR</div>
+      </div>
+    `;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Nota Invoice ${order.order_number}</title>
+          <style>
+            body { font-family: 'Inter', system-ui, sans-serif; color: #334155; margin: 40px; line-height: 1.5; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { background: #f8fafc; padding: 12px 8px; text-align: left; font-weight: bold; color: #475569; border-bottom: 2px solid #e2e8f0; font-size: 11px; text-transform: uppercase; }
+            ol { margin: 4px 0 0 0; padding-left: 15px; }
+          </style>
+        </head>
+        <body>
+          <div style="position: relative; min-h-screen; padding-bottom: 120px;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #cbd5e1; padding-bottom: 20px; margin-bottom: 30px;">
+              <div>
+                <h1 style="margin: 0; color: #0f172a; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">LAVE SHOE TREATMENT</h1>
+                <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b; font-weight: 500;">Premium Sneakers Care & Treatment</p>
+                <p style="margin: 2px 0 0 0; font-size: 10px; color: #94a3b8;">Jl. Jenderal Sudirman No. 123 | WA: 081234567890</p>
+              </div>
+              <div style="text-align: right;">
+                <h2 style="margin: 0; color: #64748b; font-size: 16px; font-weight: 700;">INVOICE</h2>
+                <p style="margin: 4px 0 0 0; font-size: 13px; font-weight: bold; color: #0f172a;">${order.order_number}</p>
+                <p style="margin: 2px 0 0 0; font-size: 10px; color: #94a3b8;">Tanggal: ${new Date(order.order_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px; font-size: 11px;">
+              <div>
+                <div style="font-weight: bold; color: #94a3b8; text-transform: uppercase; font-size: 9px; letter-spacing: 1px; margin-bottom: 6px;">Pelanggan:</div>
+                <div style="font-weight: 800; color: #0f172a; font-size: 13px;">${order.customer?.full_name}</div>
+                <div style="color: #475569; margin-top: 4px;">WhatsApp: ${order.customer?.phone}</div>
+                <div style="color: #64748b; margin-top: 2px;">Email: ${order.customer?.email || '-'}</div>
+              </div>
+              <div>
+                <div style="font-weight: bold; color: #94a3b8; text-transform: uppercase; font-size: 9px; letter-spacing: 1px; margin-bottom: 6px;">Detail Order:</div>
+                <div><strong style="color: #475569;">Metode Pengambilan:</strong> ${order.pickup_method}</div>
+                <div style="margin-top: 4px;"><strong style="color: #475569;">Status Pengerjaan:</strong> ${order.status}</div>
+                <div style="margin-top: 4px;"><strong style="color: #475569;">Metode Pembayaran:</strong> ${order.payment_transaction?.payment_method || '-'}</div>
+              </div>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Item Sepatu</th>
+                  <th>Layanan</th>
+                  <th style="text-align: center;">Jumlah</th>
+                  <th style="text-align: right;">Harga Satuan</th>
+                  <th style="text-align: right;">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+            </table>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 30px; font-size: 11px;">
+              <div style="width: 250px; border-top: 2px solid #cbd5e1; padding-top: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #64748b;">
+                  <span>Subtotal:</span>
+                  <span>Rp ${Number(order.subtotal).toLocaleString('id-ID')}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #ef4444;">
+                  <span>Diskon:</span>
+                  <span>- Rp ${Number(order.discount).toLocaleString('id-ID')}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 14px; color: #0f172a; border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 8px;">
+                  <span>Total Bayar:</span>
+                  <span>Rp ${Number(order.total_price).toLocaleString('id-ID')}</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top: 50px; font-size: 9px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 15px;">
+              <strong style="color: #64748b;">Syarat & Ketentuan Layanan:</strong>
+              <ol>
+                <li>Pengambilan barang wajib menunjukkan nota invoice digital ini.</li>
+                <li>Kerusakan/luntur yang disebabkan oleh cacat pabrik atau usia sepatu bukan tanggung jawab Lave.</li>
+                <li>Klaim komplain hanya berlaku maksimal 24 jam setelah barang diserahkan ke customer.</li>
+              </ol>
+            </div>
+
+            ${stampHtml}
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 450);
+  };
+
+
   // Helper stats for Dashboard
   const activeOrdersCount = orders.filter(o => !['Completed', 'Cancelled'].includes(o.status)).length;
   const readyToPickCount = orders.filter(o => o.status === 'Ready').length;
@@ -547,9 +708,9 @@ export default function App() {
                               <p className="text-[8px] font-bold text-slate-400 mb-1.5 tracking-wider">FOTO SEBELUM (BEFORE)</p>
                               <div className="grid grid-cols-2 gap-1.5">
                                 {item.photos.filter(p => p.photo_type === 'Before').map((ph, pIdx) => (
-                                  <a key={pIdx} href={ph.photo_url} target="_blank" rel="noreferrer">
+                                  <button key={pIdx} onClick={() => setPreviewImage(ph.photo_url)} className="focus:outline-none text-left">
                                     <img src={ph.photo_url} className="w-full h-14 object-cover rounded-lg border border-white/10 hover:opacity-85 transition-all" alt="Before" />
-                                  </a>
+                                  </button>
                                 ))}
                                 {item.photos.filter(p => p.photo_type === 'Before').length === 0 && (
                                   <p className="text-[8px] text-slate-500 italic">Tidak ada foto</p>
@@ -560,9 +721,9 @@ export default function App() {
                               <p className="text-[8px] font-bold text-slate-400 mb-1.5 tracking-wider">FOTO SESUDAH (AFTER)</p>
                               <div className="grid grid-cols-2 gap-1.5">
                                 {item.photos.filter(p => p.photo_type === 'After').map((ph, pIdx) => (
-                                  <a key={pIdx} href={ph.photo_url} target="_blank" rel="noreferrer">
+                                  <button key={pIdx} onClick={() => setPreviewImage(ph.photo_url)} className="focus:outline-none text-left">
                                     <img src={ph.photo_url} className="w-full h-14 object-cover rounded-lg border border-white/10 hover:opacity-85 transition-all" alt="After" />
-                                  </a>
+                                  </button>
                                 ))}
                                 {item.photos.filter(p => p.photo_type === 'After').length === 0 && (
                                   <p className="text-[8px] text-slate-500 italic">Sedang dalam pengerjaan...</p>
@@ -1039,6 +1200,12 @@ export default function App() {
                               </td>
                               <td className="p-4">
                                 <div className="flex gap-2">
+                                  <button 
+                                    onClick={() => { setSelectedOrderForDetail(order); setShowOrderDetailModal(true); }}
+                                    className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition-all"
+                                  >
+                                    Detail
+                                  </button>
                                   {!isPaid && (
                                     <button 
                                       onClick={() => handleOpenPayment(order)}
@@ -1841,6 +2008,128 @@ export default function App() {
                 Simpan Transaksi Pemasukan
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 7. DETIL ORDER & INVOICE MODAL */}
+      {showOrderDetailModal && selectedOrderForDetail && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 text-slate-800">
+          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[85vh]">
+            <header className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex justify-between items-center shrink-0">
+              <h3 className="text-sm font-bold text-slate-900 font-sans">Detail Rincian Nota Order</h3>
+              <button onClick={() => setShowOrderDetailModal(false)} className="text-slate-400 hover:text-slate-900 font-medium text-xs">Tutup</button>
+            </header>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 font-sans">
+              
+              {/* Order Info Summary */}
+              <div className="grid grid-cols-2 gap-6 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-xs">
+                <div className="space-y-1.5">
+                  <p className="text-slate-400">NOMOR INVOICE</p>
+                  <p className="font-bold text-slate-900 text-sm">{selectedOrderForDetail.order_number}</p>
+                  <p className="text-slate-400 mt-2">NAMA CUSTOMER</p>
+                  <p className="font-semibold text-slate-700">{selectedOrderForDetail.customer?.full_name}</p>
+                  <p className="text-slate-400">NO. WHATSAPP</p>
+                  <p className="text-slate-600">{selectedOrderForDetail.customer?.phone}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-slate-400">STATUS PENGERJAAN</p>
+                  <p className="font-bold text-slate-900">{selectedOrderForDetail.status}</p>
+                  <p className="text-slate-400 mt-2">METODE PENGAMBILAN</p>
+                  <p className="font-semibold text-slate-700">{selectedOrderForDetail.pickup_method}</p>
+                  <p className="text-slate-400">STATUS PEMBAYARAN</p>
+                  <p className={`font-bold ${selectedOrderForDetail.payment_transaction?.payment_status === 'Paid' ? 'text-emerald-600' : 'text-rose-500'}`}>
+                    {selectedOrderForDetail.payment_transaction?.payment_status === 'Paid' ? 'LUNAS (SAH - NO REVISION)' : 'BELUM BAYAR'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Items List */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Daftar Sepatu & Layanan</h4>
+                <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden bg-white">
+                  {selectedOrderForDetail.items?.map((item, idx) => (
+                    <div key={idx} className="p-4 space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-bold text-slate-800 text-xs">{item.shoe_brand} - {item.shoe_type}</p>
+                          <p className="text-[10px] text-slate-400 font-medium">Warna: {item.shoe_color || '-'} | Qty: {item.qty} pasang</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="px-2 py-0.5 rounded bg-blue-50 text-brand-primary text-[10px] font-bold uppercase">{item.service?.service_name}</span>
+                          <p className="font-bold text-slate-700 text-xs mt-1">Rp {Number(item.subtotal).toLocaleString('id-ID')}</p>
+                        </div>
+                      </div>
+
+                      {/* Before/After Gallery with lightbox click */}
+                      {item.photos && item.photos.length > 0 && (
+                        <div className="grid grid-cols-2 gap-4 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                          <div>
+                            <p className="text-[8px] font-bold text-slate-400 mb-1 tracking-wider uppercase">Before</p>
+                            <div className="flex gap-1.5 flex-wrap">
+                              {item.photos.filter(p => p.photo_type === 'Before').map((ph, pIdx) => (
+                                <button key={pIdx} type="button" onClick={() => setPreviewImage(ph.photo_url)} className="focus:outline-none">
+                                  <img src={ph.photo_url} className="w-10 h-10 object-cover rounded border border-slate-200 hover:opacity-80" alt="Before" />
+                                </button>
+                              ))}
+                              {item.photos.filter(p => p.photo_type === 'Before').length === 0 && (
+                                <span className="text-[9px] text-slate-400 italic">Tidak ada foto sebelum</span>
+                              )}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-[8px] font-bold text-slate-400 mb-1 tracking-wider uppercase">After</p>
+                            <div className="flex gap-1.5 flex-wrap">
+                              {item.photos.filter(p => p.photo_type === 'After').map((ph, pIdx) => (
+                                <button key={pIdx} type="button" onClick={() => setPreviewImage(ph.photo_url)} className="focus:outline-none">
+                                  <img src={ph.photo_url} className="w-10 h-10 object-cover rounded border border-slate-200 hover:opacity-80" alt="After" />
+                                </button>
+                              ))}
+                              {item.photos.filter(p => p.photo_type === 'After').length === 0 && (
+                                <span className="text-[9px] text-slate-400 italic">Belum ada foto sesudah</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Price Calculation details */}
+              <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 text-xs">
+                <div className="text-slate-500 space-y-1">
+                  <p>Subtotal: Rp {Number(selectedOrderForDetail.subtotal).toLocaleString('id-ID')}</p>
+                  <p className="text-rose-500">Diskon: - Rp {Number(selectedOrderForDetail.discount).toLocaleString('id-ID')}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase">Total Pembayaran</p>
+                  <p className="text-lg font-black text-brand-primary">Rp {Number(selectedOrderForDetail.total_price).toLocaleString('id-ID')}</p>
+                </div>
+              </div>
+            </div>
+
+            <footer className="bg-slate-50 border-t border-slate-200 px-6 py-4 flex justify-end gap-3 shrink-0">
+              <button 
+                type="button" 
+                onClick={() => handlePrintInvoice(selectedOrderForDetail)}
+                className="px-4 py-2.5 bg-brand-primary hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow"
+              >
+                Cetak Nota / PDF
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox / Fullscreen Image Preview overlay */}
+      {previewImage && (
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-6" onClick={() => setPreviewImage(null)}>
+          <div className="relative max-w-4xl max-h-[90vh]">
+            <img src={previewImage} className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl border border-white/10" alt="Preview" />
+            <button onClick={() => setPreviewImage(null)} className="absolute -top-10 right-0 text-white font-bold hover:text-slate-300 text-xs bg-slate-900/60 px-3 py-1.5 rounded-full border border-white/10">Tutup Preview</button>
           </div>
         </div>
       )}
