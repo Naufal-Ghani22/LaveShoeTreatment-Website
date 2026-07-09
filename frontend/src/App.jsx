@@ -6,6 +6,27 @@ import {
 } from 'lucide-react';
 import api from './api';
 
+const formatPhotoUrl = (url) => {
+  if (!url) return '';
+  let formatted = url;
+  
+  // 1. Resolve local mock IP addresses to the production domain dynamically
+  if (formatted.includes('127.0.0.1:8000') || formatted.includes('localhost:8000')) {
+    const apiBase = import.meta.env.VITE_API_URL || '';
+    const baseDomain = apiBase.replace(/\/api$/, ''); // Remove /api suffix
+    if (baseDomain) {
+      formatted = formatted.replace(/http:\/\/(127\.0\.0\.1|localhost):8000/, baseDomain);
+    }
+  }
+  
+  // 2. Convert HEIC/HEIF to JPG for browser compatibility (dynamic conversion on Cloudinary)
+  if (formatted.toLowerCase().endsWith('.heic') || formatted.toLowerCase().endsWith('.heif')) {
+    formatted = formatted.replace(/\.(heic|heif)$/i, '.jpg');
+  }
+  
+  return formatted;
+};
+
 export default function App() {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('lavest_user');
@@ -718,7 +739,7 @@ export default function App() {
                               <div className="grid grid-cols-2 gap-1.5">
                                 {item.photos.filter(p => p.photo_type === 'Before').map((ph, pIdx) => (
                                   <button key={pIdx} onClick={() => setPreviewImage(ph.photo_url)} className="focus:outline-none text-left">
-                                    <img src={ph.photo_url} className="w-full h-14 object-cover rounded-lg border border-white/10 hover:opacity-85 transition-all" alt="Before" />
+                                    <img src={formatPhotoUrl(ph.photo_url)} className="w-full h-14 object-cover rounded-lg border border-white/10 hover:opacity-85 transition-all" alt="Before" />
                                   </button>
                                 ))}
                                 {item.photos.filter(p => p.photo_type === 'Before').length === 0 && (
@@ -731,7 +752,7 @@ export default function App() {
                               <div className="grid grid-cols-2 gap-1.5">
                                 {item.photos.filter(p => p.photo_type === 'After').map((ph, pIdx) => (
                                   <button key={pIdx} onClick={() => setPreviewImage(ph.photo_url)} className="focus:outline-none text-left">
-                                    <img src={ph.photo_url} className="w-full h-14 object-cover rounded-lg border border-white/10 hover:opacity-85 transition-all" alt="After" />
+                                    <img src={formatPhotoUrl(ph.photo_url)} className="w-full h-14 object-cover rounded-lg border border-white/10 hover:opacity-85 transition-all" alt="After" />
                                   </button>
                                 ))}
                                 {item.photos.filter(p => p.photo_type === 'After').length === 0 && (
@@ -2079,7 +2100,7 @@ export default function App() {
                             <div className="flex gap-1.5 flex-wrap">
                               {item.photos.filter(p => p.photo_type === 'Before').map((ph, pIdx) => (
                                 <button key={pIdx} type="button" onClick={() => setPreviewImage(ph.photo_url)} className="focus:outline-none">
-                                  <img src={ph.photo_url} className="w-10 h-10 object-cover rounded border border-slate-200 hover:opacity-80" alt="Before" />
+                                  <img src={formatPhotoUrl(ph.photo_url)} className="w-10 h-10 object-cover rounded border border-slate-200 hover:opacity-80" alt="Before" />
                                 </button>
                               ))}
                               {item.photos.filter(p => p.photo_type === 'Before').length === 0 && (
@@ -2092,7 +2113,7 @@ export default function App() {
                             <div className="flex gap-1.5 flex-wrap">
                               {item.photos.filter(p => p.photo_type === 'After').map((ph, pIdx) => (
                                 <button key={pIdx} type="button" onClick={() => setPreviewImage(ph.photo_url)} className="focus:outline-none">
-                                  <img src={ph.photo_url} className="w-10 h-10 object-cover rounded border border-slate-200 hover:opacity-80" alt="After" />
+                                  <img src={formatPhotoUrl(ph.photo_url)} className="w-10 h-10 object-cover rounded border border-slate-200 hover:opacity-80" alt="After" />
                                 </button>
                               ))}
                               {item.photos.filter(p => p.photo_type === 'After').length === 0 && (
@@ -2137,7 +2158,7 @@ export default function App() {
       {previewImage && (
         <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-6" onClick={() => setPreviewImage(null)}>
           <div className="relative max-w-4xl max-h-[90vh]">
-            <img src={previewImage} className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl border border-white/10" alt="Preview" />
+            <img src={formatPhotoUrl(previewImage)} className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl border border-white/10" alt="Preview" />
             <button onClick={() => setPreviewImage(null)} className="absolute -top-10 right-0 text-white font-bold hover:text-slate-300 text-xs bg-slate-900/60 px-3 py-1.5 rounded-full border border-white/10">Tutup Preview</button>
           </div>
         </div>
