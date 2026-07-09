@@ -199,7 +199,7 @@ class OrderController extends Controller
             'reference_number' => 'nullable|string|max:50',
         ]);
 
-        $order = Order::with('customer.loyaltyAccount')->find($id);
+        $order = Order::with(['customer.loyaltyAccount', 'items'])->find($id);
 
         if (!$order) {
             return response()->json(['message' => 'Pesanan tidak ditemukan.'], 404);
@@ -227,7 +227,7 @@ class OrderController extends Controller
             $customer = $order->customer;
             $customer->increment('total_spent', $request->paid_amount);
 
-            $stampsEarned = floor($request->paid_amount / 25000);
+            $stampsEarned = (int) $order->items->sum('qty');
             if ($stampsEarned > 0) {
                 $loyalty = $customer->loyaltyAccount;
                 if ($loyalty) {
