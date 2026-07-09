@@ -345,7 +345,10 @@ export default function App() {
           formData.append('items[0][photos_after][]', file);
         });
         await api.post(`/orders/${orderId}/status`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
+          headers: { 
+            'Content-Type': 'multipart/form-data',
+            'Accept': 'application/json'
+          }
         });
       } else {
         await api.post(`/orders/${orderId}/status`, { status: newStatus });
@@ -353,7 +356,13 @@ export default function App() {
       fetchOrders();
       fetchFinancePerformance();
     } catch (err) {
-      alert(err.response?.data?.message || 'Gagal memperbarui status order.');
+      console.error(err);
+      if (err.response?.data?.errors) {
+        const errorMsgs = Object.values(err.response.data.errors).flat().join('\n');
+        alert('Gagal memperbarui status:\n' + errorMsgs);
+      } else {
+        alert(err.response?.data?.message || err.message || 'Gagal memperbarui status order.');
+      }
     }
   };
 
