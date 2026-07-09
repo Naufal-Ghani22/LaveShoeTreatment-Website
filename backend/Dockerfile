@@ -31,4 +31,4 @@ RUN chmod +x artisan
 EXPOSE 8080
 
 # Automatically migrate database and seed data on startup, then start server
-CMD php artisan migrate --seed --force && php artisan serve --host=0.0.0.0 --port=8080
+CMD php artisan migrate --force && php artisan db:seed --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
