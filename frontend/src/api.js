@@ -29,9 +29,7 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('lavest_token');
       localStorage.removeItem('lavest_user');
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
-        window.location.href = '/login';
-      }
+      window.location.reload();
     }
     return Promise.reject(error);
   }
