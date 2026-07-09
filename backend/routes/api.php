@@ -28,6 +28,15 @@ Route::get('/debug-db', function () {
     ]);
 });
 
+Route::get('/debug-logs', function () {
+    $logPath = storage_path('logs/laravel.log');
+    if (!file_exists($logPath)) {
+        return response()->json(['message' => 'Log file not found.']);
+    }
+    $logs = file_get_contents($logPath);
+    return response(substr($logs, -8000) ?: $logs, 200, ['Content-Type' => 'text/plain']);
+});
+
 // Authenticated Routes (Secure via Laravel Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
     
