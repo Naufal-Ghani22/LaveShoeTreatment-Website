@@ -945,10 +945,10 @@ export default function App() {
         </div>
       ) : (
         /* 2. ADMIN DASHBOARD WORKSPACE */
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative pb-16 lg:pb-0">
           
           {/* SIDEBAR PANEL */}
-          <aside className="w-64 bg-slate-950 text-white flex flex-col border-r border-slate-900 shrink-0">
+          <aside className="hidden lg:flex w-64 bg-slate-950 text-white flex-col border-r border-slate-900 shrink-0">
             {/* Brand Title */}
             <div className="p-6 border-b border-slate-900 flex items-center gap-3">
               <div className="w-9 h-9 bg-slate-800/60 rounded-lg flex items-center justify-center shrink-0 overflow-hidden p-1 border border-slate-700">
@@ -1012,24 +1012,31 @@ export default function App() {
           <main className="flex-1 flex flex-col overflow-y-auto bg-slate-50">
             
             {/* Page Header */}
-            <header className="bg-white border-b border-slate-200 px-8 py-5 flex justify-between items-center shrink-0">
+            <header className="bg-white border-b border-slate-200 px-4 md:px-8 py-4 md:py-5 flex justify-between items-center shrink-0">
               <div>
-                <h1 className="text-lg font-bold text-slate-900 capitalize">{activeTab} Modul</h1>
-                <p className="text-xs text-slate-500">Overview statistics and management metrics.</p>
+                <h1 className="text-sm md:text-lg font-bold text-slate-900 capitalize">{activeTab} Modul</h1>
+                <p className="text-[10px] md:text-xs text-slate-500 hidden sm:block">Overview statistics and management metrics.</p>
               </div>
               
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 md:gap-3">
                 <button 
                   onClick={() => setShowOrderModal(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-brand-primary to-brand-cyan hover:shadow-md text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow shadow-brand-primary/10"
+                  className="px-3 py-2 md:px-4 md:py-2 bg-gradient-to-r from-brand-primary to-brand-cyan hover:shadow-md text-white text-[10px] md:text-xs font-bold rounded-xl transition-all flex items-center gap-1 shadow shadow-brand-primary/10"
                 >
-                  <Plus className="w-4 h-4" /> Order Baru
+                  <Plus className="w-3.5 h-3.5" /> Order Baru
+                </button>
+                <button 
+                  onClick={handleLogout}
+                  className="lg:hidden p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-100 rounded-xl transition-all border border-slate-200"
+                  title="Keluar"
+                >
+                  <LogOut className="w-4.5 h-4.5" />
                 </button>
               </div>
             </header>
 
             {/* Dynamic View Loader */}
-            <div className="p-8 flex-1 space-y-6">
+            <div className="p-4 md:p-8 flex-1 space-y-6">
               
               {/* TAB 1: OVERVIEW DASHBOARD */}
               {activeTab === 'dashboard' && (
@@ -1295,7 +1302,8 @@ export default function App() {
 
                   {/* Main Orders Table */}
                   <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                    <table className="w-full text-left text-xs">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
                       <thead className="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase tracking-wider font-bold">
                         <tr>
                           <th className="p-4 font-semibold">No. Invoice</th>
@@ -1393,6 +1401,7 @@ export default function App() {
                         })}
                       </tbody>
                     </table>
+                  </div>
                   </div>
                 </div>
               )}
@@ -1641,6 +1650,32 @@ export default function App() {
 
             </div>
           </main>
+          
+          {/* MOBILE BOTTOM NAVIGATION BAR */}
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-slate-950 border-t border-slate-900 flex justify-around items-center px-4 z-40">
+            {[
+              { id: 'dashboard', label: 'Overview', icon: BarChart2 },
+              { id: 'orders', label: 'Orders', icon: ShoppingBag },
+              { id: 'customers', label: 'Customers', icon: Users },
+              { id: 'finance', label: 'Finance', icon: DollarSign },
+              { id: 'services', label: 'Services', icon: Settings },
+            ].map((tab) => {
+              const IconComponent = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all ${
+                    isActive ? 'text-brand-cyan' : 'text-slate-400'
+                  }`}
+                >
+                  <IconComponent className="w-4.5 h-4.5" />
+                  <span className="text-[8px] font-bold mt-1 tracking-wide">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
