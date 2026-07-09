@@ -41,8 +41,8 @@ const compressImage = (file) => {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1200;
-        const MAX_HEIGHT = 1200;
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
         let width = img.width;
         let height = img.height;
         
@@ -73,7 +73,7 @@ const compressImage = (file) => {
             lastModified: Date.now()
           });
           resolve(compressedFile);
-        }, 'image/jpeg', 0.7);
+        }, 'image/jpeg', 0.6);
       };
       img.onerror = () => resolve(file);
     };
