@@ -73,6 +73,10 @@ export default function App() {
   const [selectedOrderForDetail, setSelectedOrderForDetail] = useState(null);
   const [showOrderDetailModal, setShowOrderDetailModal] = useState(false);
 
+  // Global Transaction & Uploading state
+  const [uploading, setUploading] = useState(false);
+  const [uploadingMessage, setUploadingMessage] = useState('');
+
   // Manual Income Modal state
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [incomeCategory, setIncomeCategory] = useState('');
@@ -264,6 +268,8 @@ export default function App() {
     e.preventDefault();
     if (!newOrderCustomer) return alert('Silakan pilih pelanggan.');
 
+    setUploading(true);
+    setUploadingMessage('Sedang membuat pesanan baru dan mengunggah foto sebelum (Before) ke Cloudinary...');
     try {
       const formData = new FormData();
       formData.append('customer_id', newOrderCustomer);
@@ -309,6 +315,8 @@ export default function App() {
       } else {
         alert(err.response?.data?.message || err.message || 'Gagal membuat pesanan baru.');
       }
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -320,6 +328,8 @@ export default function App() {
 
   const handleProcessPayment = async (e) => {
     e.preventDefault();
+    setUploading(true);
+    setUploadingMessage('Sedang memproses pembayaran order dan mencatat ke pembukuan...');
     try {
       await api.post(`/orders/${selectedOrder.id}/pay`, {
         payment_method: paymentMethod,
@@ -333,10 +343,14 @@ export default function App() {
       setPaymentRef('');
     } catch (err) {
       alert(err.response?.data?.message || 'Gagal memproses pembayaran.');
+    } finally {
+      setUploading(false);
     }
   };
 
   const handleUpdateStatus = async (orderId, newStatus, files = null) => {
+    setUploading(true);
+    setUploadingMessage(files ? 'Sedang mengunggah foto sesudah (After) ke Cloudinary dan memperbarui status...' : 'Sedang memperbarui status pengerjaan pesanan...');
     try {
       if (files && files.length > 0) {
         const formData = new FormData();
@@ -363,6 +377,8 @@ export default function App() {
       } else {
         alert(err.response?.data?.message || err.message || 'Gagal memperbarui status order.');
       }
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -390,6 +406,8 @@ export default function App() {
 
   const handleRecordExpense = async (e) => {
     e.preventDefault();
+    setUploading(true);
+    setUploadingMessage('Sedang mencatat pengeluaran baru ke kas...');
     try {
       await api.post('/finance/expenses', {
         financial_category_id: expenseCategory,
@@ -405,11 +423,15 @@ export default function App() {
       setExpenseDesc('');
     } catch (err) {
       alert(err.response?.data?.message || 'Gagal mencatat pengeluaran.');
+    } finally {
+      setUploading(false);
     }
   };
 
   const handleRecordIncome = async (e) => {
     e.preventDefault();
+    setUploading(true);
+    setUploadingMessage('Sedang mencatat pemasukan baru ke kas...');
     try {
       await api.post('/finance/incomes', {
         financial_category_id: incomeCategory,
@@ -425,11 +447,15 @@ export default function App() {
       setIncomeDesc('');
     } catch (err) {
       alert(err.response?.data?.message || 'Gagal mencatat pemasukan.');
+    } finally {
+      setUploading(false);
     }
   };
 
   const handleRecordAsset = async (e) => {
     e.preventDefault();
+    setUploading(true);
+    setUploadingMessage('Sedang mencatatkan aset inventaris baru...');
     try {
       await api.post('/finance/assets', {
         branch_id: 1,
@@ -446,6 +472,8 @@ export default function App() {
       setAssetResidual(0);
     } catch (err) {
       alert(err.response?.data?.message || 'Gagal mencatat aset inventaris.');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -2169,6 +2197,24 @@ export default function App() {
           <div className="relative max-w-4xl max-h-[90vh]">
             <img src={formatPhotoUrl(previewImage)} className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl border border-white/10" alt="Preview" />
             <button onClick={() => setPreviewImage(null)} className="absolute -top-10 right-0 text-white font-bold hover:text-slate-300 text-xs bg-slate-900/60 px-3 py-1.5 rounded-full border border-white/10">Tutup Preview</button>
+          </div>
+        </div>
+      )}
+
+      {/* Global Waiting / Uploading Overlay Screen */}
+      {uploading && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-[100] flex flex-col items-center justify-center p-6 text-white font-sans">
+          <div className="bg-slate-900/80 border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-sm w-full text-center space-y-4 relative overflow-hidden">
+            {/* Soft Ambient Light Effect */}
+            <div className="absolute -top-10 -right-10 w-24 h-24 bg-brand-cyan/20 rounded-full blur-2xl"></div>
+            
+            {/* Spinning Loader */}
+            <RefreshCw className="w-10 h-10 text-brand-cyan animate-spin" />
+            
+            <div>
+              <h4 className="text-sm font-bold tracking-tight">Mohon Tunggu</h4>
+              <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">{uploadingMessage || 'Sedang memproses dan mengunggah data ke server...'}</p>
+            </div>
           </div>
         </div>
       )}
