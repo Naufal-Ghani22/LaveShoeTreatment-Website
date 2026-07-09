@@ -22,6 +22,9 @@ Route::get('/debug-db', function () {
         'users_count' => \App\Models\User::count(),
         'roles_count' => \App\Models\Role::count(),
         'services_count' => \App\Models\Service::count(),
+        'customers_count' => \App\Models\Customer::count(),
+        'orders_count' => \App\Models\Order::count(),
+        'branches' => \App\Models\Branch::all(),
     ]);
 });
 
