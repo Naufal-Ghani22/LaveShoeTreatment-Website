@@ -18,12 +18,10 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/orders/track', [OrderController::class, 'trackPublic']);
 Route::get('/debug-db', function () {
     return response()->json([
-        'incomes_count' => \App\Models\Income::count(),
-        'expenses_count' => \App\Models\Expense::count(),
-        'cashflows_count' => \App\Models\Cashflow::count(),
-        'categories' => \App\Models\FinancialCategory::all(),
-        'last_incomes' => \App\Models\Income::latest()->take(5)->get(),
-        'last_cashflows' => \App\Models\Cashflow::latest()->take(5)->get(),
+        'status' => 'online',
+        'users_count' => \App\Models\User::count(),
+        'roles_count' => \App\Models\Role::count(),
+        'services_count' => \App\Models\Service::count(),
     ]);
 });
 
