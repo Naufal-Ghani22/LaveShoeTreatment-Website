@@ -16,6 +16,16 @@ use Illuminate\Support\Facades\Route;
 // Public Authentication Route
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/orders/track', [OrderController::class, 'trackPublic']);
+Route::get('/debug-db', function () {
+    return response()->json([
+        'incomes_count' => \App\Models\Income::count(),
+        'expenses_count' => \App\Models\Expense::count(),
+        'cashflows_count' => \App\Models\Cashflow::count(),
+        'categories' => \App\Models\FinancialCategory::all(),
+        'last_incomes' => \App\Models\Income::latest()->take(5)->get(),
+        'last_cashflows' => \App\Models\Cashflow::latest()->take(5)->get(),
+    ]);
+});
 
 // Authenticated Routes (Secure via Laravel Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
